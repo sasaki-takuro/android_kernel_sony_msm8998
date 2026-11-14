@@ -2283,6 +2283,12 @@ hotplug_update_tasks(struct cpuset *cs,
  * offline, update @cs accordingly.  If @cs ends up with no CPU or memory,
  * all its tasks are moved to the nearest ancestor with both resources.
  */
+static inline bool cpuset_v2(void)
+{
+	return cgroup_subsys_on_dfl(cpuset_cgrp_subsys) ||
+	       (cpuset_cgrp_subsys.root->flags & CGRP_ROOT_CPUSET_V2_MODE);
+}
+
 static void cpuset_hotplug_update_tasks(struct cpuset *cs)
 {
 	static cpumask_t new_cpus;
@@ -2310,7 +2316,7 @@ retry:
 	cpus_updated = !cpumask_equal(&new_cpus, cs->effective_cpus);
 	mems_updated = !nodes_equal(new_mems, cs->effective_mems);
 
-	if (cgroup_subsys_on_dfl(cpuset_cgrp_subsys))
+	if (cpuset_v2())
 		hotplug_update_tasks(cs, &new_cpus, &new_mems,
 				     cpus_updated, mems_updated);
 	else
@@ -2348,7 +2354,7 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
 	static cpumask_t new_cpus;
 	static nodemask_t new_mems;
 	bool cpus_updated, mems_updated;
-	bool on_dfl = cgroup_subsys_on_dfl(cpuset_cgrp_subsys);
+	bool on_dfl = cpuset_v2();
 
 	mutex_lock(&cpuset_mutex);
 
